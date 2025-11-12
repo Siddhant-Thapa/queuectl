@@ -34,6 +34,8 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+> **Note:** This can be skipped as all used modules (argparse, sqlite3, multiprocessing, uuid, datetime) are part of the Python Standard Library.
+
 ### 4. Install QueueCTL as a CLI command (optional but recommended)
 
 ```bash
@@ -44,12 +46,15 @@ This enables you to run the `queuectl` command globally instead of using `python
 
 ## Usage Examples
 
-> ⚠️ **Windows PowerShell Note:** Always include `--%` before JSON input to prevent argument parsing issues.
+> ⚠️ **Windows PowerShell Note:** Always include `--%` before JSON input to prevent argument parsing issues.  
+> **Example:** `queuectl enqueue --% "{\"command\": \"timeout /T 2\"}"`  
+> **Note:** Skip `--%` when using regular CLI/CMD
 
 ### Enqueue a job
 
-```powershell
-queuectl enqueue --% "{\"command\": \"timeout /T 2\"}"
+```bash
+queuectl enqueue "{\"command\": \"timeout /T 2\"}"
+queuectl enqueue "{\"command\": \"echo Hello QueueCTL\"}"
 ```
 
 **Output:**
@@ -60,7 +65,7 @@ Job 1c23b86a-b7a9-4ac1-9cbb-78a4b8c93fa3 inserted.
 
 ### Start workers
 
-```powershell
+```bash
 queuectl worker start --count 2
 ```
 
@@ -76,13 +81,13 @@ Manager: spawned worker pid=23457
 
 ### Stop workers
 
-```powershell
+```bash
 queuectl worker stop
 ```
 
 ### List all jobs
 
-```powershell
+```bash
 queuectl list
 ```
 
@@ -91,24 +96,25 @@ queuectl list
 ID                                   | STATE      | ATTEMPTS | COMMAND
 --------------------------------------------------------------------------------
 1c23b86a-b7a9-4ac1-9cbb-78a4b8c93fa3 | completed  |        1 | timeout /T 2
+e9f93f63-7ed4-400a-94c1-67e27963251f | completed  |        1 | echo Hello QueueCTL
 ```
 
 ### List jobs by state
 
-```powershell
+```bash
 queuectl list --state failed
 ```
 
 ### Check DLQ and retry jobs
 
-```powershell
+```bash
 queuectl dlq list
 queuectl dlq retry <job-id>
 ```
 
 ### Show system status
 
-```powershell
+```bash
 queuectl status
 ```
 
@@ -172,9 +178,9 @@ All job data survives restarts — workers resume unprocessed jobs automatically
 2. Atomically claim one job (state='processing')
 3. Execute command via subprocess
 4. Update job status:
-   - ✅ Success → `completed`
-   - ❌ Failure → increment attempt + exponential backoff delay
-   - ☠️ Retries exhausted → `dead` (DLQ)
+   -  Success → `completed`
+   -  Failure → increment attempt + exponential backoff delay
+   -  Retries exhausted → `dead` (DLQ)
 
 ### Retry / Backoff Logic
 
@@ -205,8 +211,9 @@ Example: `base_backoff = 2` → delays 2s, 4s, 8s, …
 
 | Test | Command | Expected Outcome |
 |------|---------|------------------|
-| Basic job | `queuectl enqueue --% "{\"command\": \"timeout /T 2\"}"` | Job completes successfully |
-| Invalid job | `queuectl enqueue --% "{\"command\": \"nonexistent_command\"}"` | Retries 3 times → DLQ |
+| Basic job | `queuectl enqueue "{\"command\": \"timeout /T 2\"}"` | Job completes successfully |
+| Basic job | `queuectl enqueue "{\"command\": \"echo Hello QueueCTL\"}"` | Job completes successfully |
+| Invalid job | `queuectl enqueue "{\"command\": \"nonexistent_command\"}"` | Retries 3 times → DLQ |
 | DLQ retry | `queuectl dlq retry <job-id>` | Job moves to pending and runs again |
 | Multiple workers | `queuectl worker start --count 3` | Jobs executed concurrently |
 | Restart | Stop and restart workers | Pending/failed jobs persist |
