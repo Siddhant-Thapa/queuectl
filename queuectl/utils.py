@@ -5,7 +5,7 @@ import math
 
 def utcnow_iso() -> str:
     """Return current UTC time in ISO8601 with 'Z' suffix."""
-    return datetime.datetime.utcnow().isoformat() + "Z"
+    return datetime.datetime.utcnow().isoformat()
 
 def generate_id() -> str:
     """Generate a unique job ID."""

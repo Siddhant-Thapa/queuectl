@@ -43,7 +43,8 @@ class Worker:
         cur.execute("""
             SELECT id, command, attempts, max_retries
             FROM jobs
-            WHERE state='pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+            WHERE state IN ('pending', 'failed')
+            AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
             ORDER BY created_at ASC
             LIMIT 1
         """, (now,))
@@ -56,13 +57,14 @@ class Worker:
         cur.execute("""
             UPDATE jobs
             SET state='processing', updated_at=?
-            WHERE id=? AND state='pending'
+            WHERE id=? AND state IN ('pending', 'failed')
         """, (utcnow_iso(), job_id))
         self.conn.commit()
 
         if cur.rowcount == 1:
             return job_id, command, attempts, max_retries
         return None
+
 
     def update_job_success(self, job_id: str, attempts: int, output: str):
         cur = self.conn.cursor()
@@ -79,7 +81,7 @@ class Worker:
         attempts += 1
         delay = compute_backoff(self.base_backoff, attempts)
         next_attempt = (datetime.datetime.utcnow() +
-                        datetime.timedelta(seconds=delay)).isoformat() + "Z"
+                        datetime.timedelta(seconds=delay)).isoformat()
         cur = self.conn.cursor()
 
         if attempts > max_retries:
