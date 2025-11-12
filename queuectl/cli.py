@@ -113,7 +113,11 @@ def cmd_dlq_retry(args):
 
     cur.execute("""
         UPDATE jobs
-        SET state='pending', attempts=0, next_attempt_at=NULL, last_error=NULL, updated_at=datetime('now')
+        SET state='pending', 
+        attempts=0, 
+        next_attempt_at=NULL, 
+        last_error=NULL, 
+        updated_at=datetime('now')
         WHERE id=? AND state='dead'
     """, (job_id,))
     conn.commit()

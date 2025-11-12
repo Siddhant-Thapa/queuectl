@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: queuectl
+Version: 1.0.0
+Summary: CLI-based background job queue system with workers, retries, and DLQ
+Author: Siddhant Thapa
+Author-email: thapasiddhant9@gmail.com
+Requires-Python: >=3.9
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-python
+Dynamic: summary
