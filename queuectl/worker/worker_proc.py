@@ -6,13 +6,11 @@ Worker Process
 Each worker process polls the database for pending jobs, claims one,
 executes it using the executor module, and updates its status.
 
-Responsibilities:
-- Select and lock a pending job (so no other worker can take it)
-- Execute the job command
-- Handle success, retry, or move to DLQ
-- Respect graceful shutdown signals
+This module can be imported or executed directly as:
+python -m queuectl.worker.worker_proc --worker-id 1
 """
 
+import argparse
 import datetime
 import signal
 import time
@@ -39,14 +37,9 @@ class Worker:
         self.stop_event.set()
 
     def claim_next_job(self):
-        """
-        Find and atomically claim one pending job ready for execution.
-        Returns a tuple (job_id, command, attempts, max_retries) or None.
-        """
         now = utcnow_iso()
         cur = self.conn.cursor()
 
-        # Find a pending job ready to run
         cur.execute("""
             SELECT id, command, attempts, max_retries
             FROM jobs
@@ -60,7 +53,6 @@ class Worker:
 
         job_id, command, attempts, max_retries = job
 
-        # Try to mark as 'processing' (only if still pending)
         cur.execute("""
             UPDATE jobs
             SET state='processing', updated_at=?
@@ -91,7 +83,6 @@ class Worker:
         cur = self.conn.cursor()
 
         if attempts > max_retries:
-            # Move to DLQ
             cur.execute("""
                 UPDATE jobs
                 SET state='dead', attempts=?, updated_at=?, last_error=?, output=?
@@ -99,7 +90,6 @@ class Worker:
             """, (attempts, utcnow_iso(), stderr, stdout, job_id))
             log(f"Worker-{self.worker_id}: job {job_id} moved to DLQ")
         else:
-            # Schedule retry
             cur.execute("""
                 UPDATE jobs
                 SET state='failed', attempts=?, updated_at=?, last_error=?, next_attempt_at=?, output=?
@@ -110,7 +100,6 @@ class Worker:
         self.conn.commit()
 
     def run(self):
-        """Main worker loop."""
         log(f"Worker-{self.worker_id}: started")
 
         while not self.stop_event.is_set():
@@ -131,3 +120,20 @@ class Worker:
 
         log(f"Worker-{self.worker_id}: stopping gracefully")
         self.conn.close()
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(prog="queuectl.worker")
+    parser.add_argument("--worker-id", type=int, required=True, help="Worker id")
+    parser.add_argument("--base-backoff", type=int, default=2, help="Backoff base")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    worker = Worker(worker_id=args.worker_id, base_backoff=args.base_backoff)
+    worker.run()
+
+
+if __name__ == "__main__":
+    main()
