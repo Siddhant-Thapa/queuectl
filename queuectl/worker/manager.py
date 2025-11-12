@@ -15,6 +15,8 @@ import time
 from typing import List
 
 from queuectl.pidfile import write_pidfile, remove_pidfile
+from queuectl.db.repo import connect
+
 
 
 class WorkerManager:
@@ -29,6 +31,12 @@ class WorkerManager:
         self._stopping = True
 
     def start(self):
+        # Safety cleanup: reset any jobs stuck in 'processing' to 'failed'
+        conn = connect()
+        cur = conn.cursor()
+        cur.execute("UPDATE jobs SET state='failed' WHERE state='processing'")
+        conn.commit()
+        conn.close()
         print(f"Manager: starting {self.worker_count} workers (pid {os.getpid()})")
         write_pidfile(self.pidfile, os.getpid())
 

@@ -11,10 +11,11 @@ python -m queuectl.worker.worker_proc --worker-id 1
 """
 
 import argparse
-import datetime
+# import datetime
 import signal
 import time
 from threading import Event
+from datetime import datetime , UTC , timedelta
 
 from queuectl.db.repo import connect
 from queuectl.executor import execute_command
@@ -80,8 +81,8 @@ class Worker:
                            stderr: str, stdout: str):
         attempts += 1
         delay = compute_backoff(self.base_backoff, attempts)
-        next_attempt = (datetime.datetime.utcnow() +
-                        datetime.timedelta(seconds=delay)).isoformat()
+        next_attempt = (datetime.now(UTC) +
+                        timedelta(seconds=delay)).isoformat()
         cur = self.conn.cursor()
 
         if attempts > max_retries:

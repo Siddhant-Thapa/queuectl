@@ -1,11 +1,11 @@
 # queuectl/utils.py
-import datetime
+from datetime import datetime, UTC
 import uuid
 import math
 
 def utcnow_iso() -> str:
     """Return current UTC time in ISO8601 with 'Z' suffix."""
-    return datetime.datetime.utcnow().isoformat()
+    return datetime.now(UTC).isoformat()
 
 def generate_id() -> str:
     """Generate a unique job ID."""
@@ -20,7 +20,7 @@ def compute_backoff(base: int, attempts: int) -> int:
 
 def pretty_time() -> str:
     """Return local readable timestamp for logs."""
-    return datetime.datetime.now().strftime("[%H:%M:%S]")
+    return datetime.now().strftime("[%H:%M:%S]")
 
 def log(msg: str):
     """Print a simple timestamped log message."""
