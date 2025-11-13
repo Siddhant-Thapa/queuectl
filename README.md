@@ -4,6 +4,13 @@ QueueCTL is a **Python-based background job queue system** that manages asynchro
 
 All job data is stored **persistently in SQLite**, surviving restarts.
 
+## 🎥 Demo Video
+
+This demo shows the complete workflow including job enqueueing, worker management, retry logic, and DLQ handling.
+
+**[📹 View Demo Video on Google Drive](https://drive.google.com/drive/folders/1mAOFt-8QYCmVVWVCZgpILnkKN9lActC9?usp=sharing)**
+
+
 ## Tech Stack
 
 - **Language:** Python 3.11 or higher
